@@ -187,6 +187,31 @@ class SmtpMailBoxRssHandler(BaseHTTPService):
                 user=user, server=self.request.headers["Host"])
 
 
+class SmtpMailBoxJsonHandler(BaseHTTPService):
+    def set_default_headers(self):
+        self.set_header("Content-Type", "application/json; charset=UTF-8")
+
+    def initialize(self, domain):
+        self.domain = domain
+
+    def get(self, uuid):
+        user = User.get_or_none(uuid=uuid)
+        if user is None:
+            raise HTTPError(404)
+        user.last_active = time.time()
+        user.save() # prevent schd auto remove
+        tz = time.strftime("%z")
+
+        mails = []
+        for m in user.mail.order_by(Mail.send_time.desc()).limit(15):
+            mails.append({'title':m.subject, 'content':m.content, 'sender':m.sender, 'time':m.send_time.timestamp()})
+        body = {
+            'title': f'{user.uuid}@{self.domain}',
+            'mails': mails,
+        }
+        self.write(json.dumps(body))
+
+
 class SmtpUserHandler(BaseHTTPService):
     def delete(self, uuid):
         user = User.get_or_none(uuid=uuid)
@@ -261,8 +286,8 @@ if __name__ == "__main__":
         ("/mail/([a-f0-9]{8})/(\d+)/iframe", SmtpMailBoxIframeLoadHandler),
         ("/mail/([a-f0-9]{8})/(\d+)/show", SmtpMailBoxIframeNewtabHandler),
         ("/mail/([a-f0-9]{8})/(\d+)", SmtpMailBoxDetailHandler),
-        ("/mail/([a-f0-9]{8})/rss", SmtpMailBoxRssHandler,
-                            dict(domain=options.domain)),
+        ("/mail/([a-f0-9]{8})/rss", SmtpMailBoxRssHandler, dict(domain=options.domain)),
+        ("/mail/([a-f0-9]{8})/json", SmtpMailBoxJsonHandler, dict(domain=options.domain)),
         ("/mail/([a-f0-9]{8})", SmtpMailBoxHandler),
         ("/user/([a-f0-9]{8})?", SmtpUserHandler),
     ],
