@@ -282,8 +282,8 @@ if __name__ == "__main__":
     server = tornado.web.Application(
     [
         ("/intro", SmtpIntroHandler),
-        ("/favicon.ico", tornado.web.StaticFileHandler, dict(url="/static/favicon.ico",
-                                            permanent=False)),
+        ("/robots.txt", tornado.web.StaticFileHandler, dict(url="/static/robots.txt", permanent=False)),
+        ("/favicon.ico", tornado.web.StaticFileHandler, dict(url="/static/favicon.ico", permanent=False)),
         ("/", SmtpIndexHandler, dict(domain=options.domain)),
         ("/mail/([a-zA-Z0-9_.-]{5,58})/(\d+)/iframe", SmtpMailBoxIframeLoadHandler),
         ("/mail/([a-zA-Z0-9_.-]{5,58})/(\d+)/show", SmtpMailBoxIframeNewtabHandler),
