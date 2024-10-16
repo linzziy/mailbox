@@ -26,6 +26,7 @@ from playhouse.shortcuts import model_to_dict
 import aiosmtpd.smtp
 from aiosmtpd.controller import Controller
 
+from pynamesgenerator import random_name_for_mail
 
 database = SqliteDatabase(None)
 
@@ -81,7 +82,7 @@ class SmtpdHandler(object):
 
     async def handle_RCPT(self, server, session, envelope,
                           address, rcpt_options):
-        addr = re.search("^(?P<uuid>[a-f0-9]{8})@(?P<domain>[a-z0-9_\.-]+)$",
+        addr = re.search("^(?P<uuid>[a-zA-Z0-9_.-]{5,58})@(?P<domain>[a-z0-9_\.-]+)$",
                                     address)
         if addr is None:
             return "501 Malformed Address"
@@ -99,7 +100,7 @@ class BaseHTTPService(tornado.web.RequestHandler):
         self.set_header("Content-Type", "application/json")
 
     def is_valid_uuid(self, uuid):
-        valid = re.search("^([a-f0-9]{8})$", uuid)
+        valid = re.search("^([a-zA-Z0-9_.-]{5,58})$", uuid)
         return valid is not None
 
     def write_error(self, *args, **kwargs):
@@ -222,7 +223,8 @@ class SmtpUserHandler(BaseHTTPService):
 
     def post(self, uuid):
         uuid = uuid or self.get_cookie("uuid", "")
-        user = {"uuid": uuid or uuid4().hex[::4]}
+        # user = {"uuid": uuid or uuid4().hex[::4]}
+        user = {"uuid": uuid or random_name_for_mail()}
         if not self.is_valid_uuid(user["uuid"]):
             raise HTTPError(400)
         user, _ = User.get_or_create(uuid=user["uuid"],
@@ -283,13 +285,13 @@ if __name__ == "__main__":
         ("/favicon.ico", tornado.web.StaticFileHandler, dict(url="/static/favicon.ico",
                                             permanent=False)),
         ("/", SmtpIndexHandler, dict(domain=options.domain)),
-        ("/mail/([a-f0-9]{8})/(\d+)/iframe", SmtpMailBoxIframeLoadHandler),
-        ("/mail/([a-f0-9]{8})/(\d+)/show", SmtpMailBoxIframeNewtabHandler),
-        ("/mail/([a-f0-9]{8})/(\d+)", SmtpMailBoxDetailHandler),
-        ("/mail/([a-f0-9]{8})/rss", SmtpMailBoxRssHandler, dict(domain=options.domain)),
-        ("/mail/([a-f0-9]{8})/json", SmtpMailBoxJsonHandler, dict(domain=options.domain)),
-        ("/mail/([a-f0-9]{8})", SmtpMailBoxHandler),
-        ("/user/([a-f0-9]{8})?", SmtpUserHandler),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})/(\d+)/iframe", SmtpMailBoxIframeLoadHandler),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})/(\d+)/show", SmtpMailBoxIframeNewtabHandler),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})/(\d+)", SmtpMailBoxDetailHandler),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})/rss", SmtpMailBoxRssHandler, dict(domain=options.domain)),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})/json", SmtpMailBoxJsonHandler, dict(domain=options.domain)),
+        ("/mail/([a-zA-Z0-9_.-]{5,58})", SmtpMailBoxHandler),
+        ("/user/([a-zA-Z0-9_.-]{5,58})?", SmtpUserHandler),
     ],
     template_path=templates,
     static_path=statics)
