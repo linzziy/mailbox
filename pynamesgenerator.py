@@ -402,6 +402,10 @@ def gen_one_gender_word(male=False):
             return ALL_ENG_NAMES[idx_name][1:]
 
 
+def gen_one_word():
+    return gen_one_gender_word(random.randint(0, 1) == 0)
+
+
 def gen_year(startyear, endyear):
     return str(random.randint(int(startyear), int(endyear)))
 
@@ -438,3 +442,4 @@ if __name__ == '__main__':
     print(gen_birthday(westenstyle=True))
     print(gen_two_words(split='', lowercase=True) + gen_year(1988, 2015))
     print(gen_one_gender_word(male=True))
+    print(gen_one_word())
